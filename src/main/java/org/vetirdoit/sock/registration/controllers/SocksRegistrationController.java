@@ -12,6 +12,7 @@ import org.vetirdoit.sock.registration.services.SockRegistrationService;
 import org.vetirdoit.sock.registration.services.exceptions.InvalidOperationException;
 
 @RestController
+@RequestMapping("/api/socks")
 public class SocksRegistrationController {
     private final SockRegistrationService sockRegistrationService;
 
@@ -20,13 +21,13 @@ public class SocksRegistrationController {
         this.sockRegistrationService = sockRegistrationService;
     }
 
-    @PostMapping("/api/socks/income")
+    @PostMapping("/income")
     public void registerIncomingSocks(@RequestBody SockTypeDto sockTypeDto) {
 
         sockRegistrationService.registerIncomingSocks( Converter.toSockType(sockTypeDto) );
     }
 
-    @PostMapping("/api/socks/outcome")
+    @PostMapping("/outcome")
     public void registerOutgoingSocks(@RequestBody SockTypeDto sockTypeDto) {
 
         try {
@@ -36,7 +37,7 @@ public class SocksRegistrationController {
         }
     }
 
-    @GetMapping("/api/socks")
+    @GetMapping
     public long getAllRequiredSocks(@RequestParam ColorDto color,
                                     @RequestParam BiPredicateDto operation,
                                     @RequestParam int cottonPart) {

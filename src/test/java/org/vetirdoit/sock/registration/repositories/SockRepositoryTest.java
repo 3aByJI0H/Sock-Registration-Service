@@ -7,8 +7,12 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.vetirdoit.sock.registration.domain.Color;
+import org.vetirdoit.sock.registration.domain.entities.QSockType;
 import org.vetirdoit.sock.registration.domain.entities.SockType;
+import org.vetirdoit.sock.registration.services.SockRegistrationService;
+import org.vetirdoit.sock.registration.services.SockRegistrationService.BiPredicate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,19 +22,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class SockRepositoryTest {
 
-    @Autowired SockRepository sockRepository;
+    SockRepository sockRepository;
+    SockRegistrationService sockRegistrationService;
+
+    @Autowired
+    public SockRepositoryTest(SockRepository sockRepository) {
+        this.sockRepository = sockRepository;
+        this.sockRegistrationService = new SockRegistrationService(sockRepository);
+    }
 
     @Test
     @Sql(scripts = {"/sql/createSockTypes.sql"})
     void countSockTypesWhenCottonPartHasSomeRestriction() {
-        var actualValues = List.of(
-                sockRepository.countSockTypesWhenCottonPartGreaterThan(Color.BLUE, -1),
-                sockRepository.countSockTypesWhenCottonPartEqual(Color.BLUE, -1),
-                sockRepository.countSockTypesWhenCottonPartEqual(Color.BLUE, 100),
-                sockRepository.countSockTypesWhenCottonPartLessThan(Color.BLUE, 50)
-        );
+
+        var operations=   List.of(BiPredicate.MORE_THAN, BiPredicate.EQUAL, BiPredicate.EQUAL, BiPredicate.LESS_THAN);
+        var compareValues = List.of(-1, -1, 100, 50);
+        var actualValues = calcResults(operations, compareValues);
         var expectedValues = List.of(15L, 0L, 6L, 4L);
         assertThat(actualValues).isEqualTo(expectedValues);
+    }
+
+    private List<Long> calcResults(List<BiPredicate> operations, List<Integer> compareValues) {
+        List<Long> results = new ArrayList<>();
+        for (int i = 0; i < Math.min(operations.size(), compareValues.size()); i++) {
+            results.add(
+                    sockRegistrationService.countRequiredSocks(
+                            Color.BLUE,
+                            operations.get(i),
+                            compareValues.get(i)
+                    )
+            );
+        }
+        return results;
     }
 
     @Test
